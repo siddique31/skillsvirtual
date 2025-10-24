@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SkillsVirtual — Starter</title>
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <style>
+    /* Dark + Blue theme */
+    :root{--bg:#071129;--card:#0b1a2b;--muted:#9fb3d3;--accent:#0ea5ff;--glass:rgba(255,255,255,0.03)}
+    *{box-sizing:border-box}
+    body{margin:0;font-family:Inter,ui-sans-serif,system-ui,Segoe UI,Roboto,Arial;background:linear-gradient(180deg,#061023 0%, #071129 100%);color:#e6f0fb}
+    .wrap{max-width:980px;margin:18px auto;padding:16px}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    h1{font-size:20px;margin:0}
+    .sub{color:var(--muted);font-size:13px}
+    .card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;padding:14px;margin-top:14px;box-shadow:0 8px 30px rgba(2,6,23,0.6)}
+    .btn{background:var(--accent);border:none;color:#042231;padding:10px 12px;border-radius:8px;cursor:pointer;font-weight:600}
+    input,textarea,select,button{font-family:inherit}
+    input,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:inherit}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    .small{font-size:13px;color:var(--muted)}
+    .profile{display:flex;gap:12px;align-items:center}
+    .avatar{width:56px;height:56px;border-radius:50%;background:var(--glass);display:inline-block;background-size:cover;background-position:center}
+    .uploader{display:flex;gap:12px;align-items:center}
+
+    /* feed */
+    .feed{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:12px}
+    .post{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:10px;border-radius:10px}
+    video{width:100%;border-radius:8px;background:#000}
+    @media(max-width:740px){.feed{grid-template-columns:1fr}.profile h2{font-size:16px}}
+
+    /* responsive footer area */
+    footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+
+    /* upload area */
+    .file-input{padding:8px;border-radius:8px;border:1px dashed rgba(255,255,255,0.06);display:inline-block}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>SkillsVirtual</h1>
+        <div class="sub">Learn. Share. Earn. — Responsive web app starter</div>
+      </div>
+      <div id="auth-area"></div>
+    </header>
+
+    <div id="main">
+      <div id="signedOutCard" class="card">
+        <h3>Get started — create short skill videos</h3>
+        <p class="small">Sign in with Google or Email. Your videos will be stored in Firebase Storage.</p>
+        <div style="margin-top:10px" class="row">
+          <button id="googleSign" class="btn">Sign in with Google</button>
+          <button id="emailSign" class="btn">Sign in with Email</button>
+        </div>
+        <div id="emailArea" style="margin-top:10px;display:none">
+          <input id="emailInput" placeholder="Email address">
+          <input id="passInput" placeholder="Password" type="password" style="margin-top:8px">
+          <button id="emailSubmit" class="btn" style="margin-top:8px">Sign up / Sign in</button>
+        </div>
+      </div>
+
+      <div id="creatorCard" class="card" style="display:none">
+        <div class="profile">
+          <div class="avatar" id="avatarPreview"></div>
+          <div>
+            <h2 id="userName">User</h2>
+            <div class="small" id="userEmail">email</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="uploader">
+          <div style="flex:1">
+            <label class="small">Video (mp4, max ~80MB recommended)</label>
+            <input type="file" id="videoFile" accept="video/*">
+            <input id="caption" placeholder="Short caption or skill (e.g. '3 tips for Canva')" style="margin-top:8px">
+            <div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+              <button id="uploadBtn" class="btn">Upload Skill Video</button>
+              <span class="small" id="uploadStatus"></span>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px">
+          <h4>Your Uploads</h4>
+          <div id="myUploads" class="feed"></div>
+        </div>
+      </div>
+
+      <div id="feedArea" class="card" style="margin-top:14px">
+        <h3>Latest Skill Videos</h3>
+        <div id="feed" class="feed"></div>
+      </div>
+
+    </div>
+
+    <footer>Built with Firebase — replace firebaseConfig and deploy. SkillsVirtual</footer>
+  </div>
+
+  <!-- Firebase CDN (v8 for simple starter) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-storage.js"></script>
+
+  <script>
+    // ====== FIREBASE CONFIG (v8 CDN style) ======
+    var firebaseConfig = {
+      apiKey: "AIzaSyAvAETobsV2HxLuIyMfcFrG9xu_5RKWFpc",
+      authDomain: "flowlinks-b249f.firebaseapp.com",
+      projectId: "flowlinks-b249f",
+      storageBucket: "flowlinks-b249f.appspot.com",
+      messagingSenderId: "920989292924",
+      appId: "1:920989292924:web:f862cb5baf60ae010bacf9",
+      measurementId: "G-NXBCEH5F9Q"
+    };
+    // ==============================================
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    // UI refs
+    const authArea = document.getElementById('auth-area');
+    const signedOutCard = document.getElementById('signedOutCard');
+    const creatorCard = document.getElementById('creatorCard');
+    const feed = document.getElementById('feed');
+    const myUploads = document.getElementById('myUploads');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const videoFile = document.getElementById('videoFile');
+    const captionInput = document.getElementById('caption');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const userName = document.getElementById('userName');
+    const userEmail = document.getElementById('userEmail');
+    const avatarPreview = document.getElementById('avatarPreview');
+
+    // Auth UI
+    function showSignedOut(){
+      authArea.innerHTML = '';
+      signedOutCard.style.display = 'block';
+      creatorCard.style.display = 'none';
+    }
+    function showSignedIn(user){
+      authArea.innerHTML = `<span class="small">${escapeHtml(user.displayName||user.email)}</span> <button id="signOutBtn" class="btn" style="margin-left:8px">Sign out</button>`;
+      document.getElementById('signOutBtn').onclick = ()=> auth.signOut();
+      signedOutCard.style.display = 'none';
+      creatorCard.style.display = 'block';
+    }
+
+    // Google sign
+    document.getElementById('googleSign').onclick = async ()=>{
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try{ await auth.signInWithPopup(provider); }catch(e){alert(e.message)}
+    }
+
+    // Email sign toggle
+    document.getElementById('emailSign').onclick = ()=> {
+      const area = document.getElementById('emailArea'); area.style.display = area.style.display==='none'?'block':'none';
+    }
+    document.getElementById('emailSubmit').onclick = async ()=>{
+      const email = document.getElementById('emailInput').value.trim();
+      const pass = document.getElementById('passInput').value;
+      if(!email||!pass) return alert('Enter email & password');
+      try{ await auth.signInWithEmailAndPassword(email,pass); }catch(err){ try{ await auth.createUserWithEmailAndPassword(email,pass);}catch(e){alert(e.message)} }
+    }
+
+    // Auth state change
+    auth.onAuthStateChanged(async user=>{
+      if(user){
+        showSignedIn(user);
+        userName.innerText = user.displayName||user.email.split('@')[0];
+        userEmail.innerText = user.email||'';
+        avatarPreview.style.backgroundImage = user.photoURL?`url(${user.photoURL})`:'none';
+        loadMyUploads(user.uid);
+      } else showSignedOut();
+    });
+
+    // Upload handler
+    uploadBtn.onclick = async ()=>{
+      const file = videoFile.files[0];
+      const caption = captionInput.value.trim();
+      const user = auth.currentUser;
+      if(!user) return alert('Sign in first');
+      if(!file) return alert('Choose a video file');
+      // basic size check (browser-side)
+      if(file.size > 80 * 1024 * 1024) return alert('File too big. Keep under ~80MB for starter');
+      const stamp = Date.now();
+      const path = `videos/${user.uid}/${stamp}_${file.name}`;
+      uploadStatus.innerText = 'Uploading...';
+      const uploadTask = storage.ref(path).put(file);
+      uploadTask.on('state_changed', snap=>{
+        const pct = Math.round((snap.bytesTransferred/snap.totalBytes)*100);
+        uploadStatus.innerText = `Uploading ${pct}%`;
+      }, err=>{ alert('Upload failed: '+err.message); uploadStatus.innerText=''; }, async ()=>{
+        const url = await uploadTask.snapshot.ref.getDownloadURL();
+        // save post
+        await db.collection('posts').add({
+          uid: user.uid,
+          author: user.displayName||user.email,
+          caption,
+          videoUrl: url,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        uploadStatus.innerText = 'Uploaded ✓';
+        videoFile.value = ''; captionInput.value='';
+        loadFeed(); loadMyUploads(user.uid);
+      });
+    }
+
+    // Load feed (recent posts)
+    async function loadFeed(){
+      feed.innerHTML = '';
+      try{
+        const snapshot = await db.collection('posts').orderBy('createdAt','desc').limit(20).get();
+        snapshot.forEach(doc=>{
+          const d = doc.data();
+          const div = document.createElement('div'); div.className='post';
+          const timeText = d.createdAt ? new Date(d.createdAt.seconds*1000).toLocaleString() : '';
+          const html = `<video controls playsinline src="${d.videoUrl}"></video><div style="margin-top:8px"><strong>${escapeHtml(d.author||'Creator')}</strong><div class="small">${escapeHtml(d.caption||'')} · ${timeText}</div></div>`;
+          div.innerHTML = html;
+          feed.appendChild(div);
+        });
+      }catch(e){ console.error(e); feed.innerHTML = '<div class="small">Feed load error</div>'; }
+    }
+
+    // Load user's uploads
+    async function loadMyUploads(uid){
+      myUploads.innerHTML='';
+      try{
+        const snapshot = await db.collection('posts').where('uid','==',uid).orderBy('createdAt','desc').limit(12).get();
+        snapshot.forEach(doc=>{
+          const d = doc.data();
+          const div = document.createElement('div'); div.className='post';
+          div.innerHTML = `<video controls playsinline src="${d.videoUrl}"></video><div style="margin-top:8px"><div class="small">${escapeHtml(d.caption||'')}</div></div>`;
+          myUploads.appendChild(div);
+        });
+      }catch(e){ console.error(e); myUploads.innerHTML = '<div class="small">Error loading uploads</div>'; }
+    }
+
+    // helper
+    function escapeHtml(s){return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',\"'\":\"&#39;\"}[c]))}
+
+    // initial load
+    loadFeed();
+
+  </script>
+</body>
+</html>
