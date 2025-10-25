@@ -3,40 +3,247 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SkillsVirtual — Empowering Skills. Enabling Growth.</title>
-  <link rel="stylesheet" href="style.css" />
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <title>SkillsVirtual Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: "Poppins", sans-serif;
+      background: #f5f7fb;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .container, .dashboard {
+      width: 90%;
+      max-width: 450px;
+      background: #fff;
+      padding: 30px;
+      margin-top: 60px;
+      border-radius: 15px;
+      box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+      transition: 0.3s;
+    }
+    h2 {
+      text-align: center;
+      color: #222;
+      margin-bottom: 20px;
+    }
+    input, button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border-radius: 8px;
+      border: 1px solid #ddd;
+      font-size: 15px;
+    }
+    button {
+      background: #0066ff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    button:hover { background: #0044cc; }
+    .hidden { display: none; }
+    .logout {
+      background: #ff4757;
+    }
+    .logout:hover { background: #d63031; }
+
+    .dashboard {
+      max-width: 800px;
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .header img {
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #0066ff;
+    }
+    .file-item {
+      display: flex;
+      justify-content: space-between;
+      background: #f7f9ff;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+    .file-item a {
+      color: #0066ff;
+      text-decoration: none;
+    }
+    #loading {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 20px;
+      color: #0066ff;
+      display: none;
+      z-index: 999;
+    }
+  </style>
 </head>
 <body>
-  <header>
-    <div class="logo">🔷 SkillsVirtual</div>
-    <button id="logoutBtn" class="hidden">Logout</button>
-  </header>
+  <div id="loading">⏳ Loading...</div>
 
-  <main>
-    <section id="authSection">
-      <h2>Login / Sign Up</h2>
-      <input type="email" id="email" placeholder="Enter your email" />
-      <input type="password" id="password" placeholder="Enter your password" />
-      <button id="signupBtn">Sign Up</button>
-      <button id="loginBtn">Login</button>
-    </section>
+  <div class="container" id="auth-container">
+    <h2>SkillsVirtual Login</h2>
+    <input type="email" id="email" placeholder="Enter email" />
+    <input type="password" id="password" placeholder="Enter password" />
+    <button id="loginBtn">Login / Sign Up</button>
+  </div>
 
-    <section id="uploadSection" class="hidden">
-      <h2>Upload Your File</h2>
-      <input type="file" id="fileInput" />
-      <button id="uploadBtn">Upload</button>
-      <div id="status"></div>
+  <div class="dashboard hidden" id="dashboard">
+    <div class="header">
+      <div>
+        <h3 id="userEmail"></h3>
+      </div>
+      <div>
+        <img id="avatarImg" src="https://via.placeholder.com/50" alt="Avatar" />
+        <input type="file" id="avatarInput" accept="image/*" style="display:none;" />
+      </div>
+    </div>
 
-      <h3>Your Uploaded Files</h3>
-      <ul id="fileList"></ul>
-    </section>
-  </main>
+    <button id="changeAvatarBtn">Change Avatar</button>
+    <hr>
+    <h3>Upload New File</h3>
+    <input type="file" id="fileInput" />
+    <button id="uploadBtn">Upload File</button>
 
-  <footer>
-    <p>© 2025 SkillsVirtual — Empowering Skills. Enabling Growth.</p>
-  </footer>
+    <h3>Your Files</h3>
+    <div id="fileList"></div>
+    <br>
+    <button class="logout" id="logoutBtn">Logout</button>
+  </div>
 
-  <script src="app.js"></script>
+  <script>
+    const SUPABASE_URL = "https://xrytaxiasdbpqhrawwep.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyeXRheGlhc2RicHFocmF3d2VwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMTUzNTUsImV4cCI6MjA3Njg5MTM1NX0.A0c_p6SgdWauAA-wv5kvFnAZ1F7bz7wLAKRiz4772m0";
+
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const authContainer = document.getElementById('auth-container');
+    const dashboard = document.getElementById('dashboard');
+    const fileList = document.getElementById('fileList');
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const fileInput = document.getElementById('fileInput');
+    const userEmailEl = document.getElementById('userEmail');
+    const avatarImg = document.getElementById('avatarImg');
+    const avatarInput = document.getElementById('avatarInput');
+    const changeAvatarBtn = document.getElementById('changeAvatarBtn');
+    const loading = document.getElementById('loading');
+
+    async function showLoading(show) {
+      loading.style.display = show ? "flex" : "none";
+    }
+
+    async function checkSession() {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        showDashboard(data.session.user);
+      }
+    }
+
+    async function showDashboard(user) {
+      authContainer.classList.add('hidden');
+      dashboard.classList.remove('hidden');
+      userEmailEl.textContent = user.email;
+      loadAvatar(user.id);
+      loadFiles();
+    }
+
+    loginBtn.addEventListener('click', async () => {
+      showLoading(true);
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        const { error: signUpError } = await supabase.auth.signUp({ email, password });
+        if (signUpError) {
+          showLoading(false);
+          return alert(signUpError.message);
+        }
+        alert("Signup successful! Please check your email to verify.");
+      } else {
+        showDashboard(data.user);
+      }
+      showLoading(false);
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      dashboard.classList.add('hidden');
+      authContainer.classList.remove('hidden');
+    });
+
+    uploadBtn.addEventListener('click', async () => {
+      const file = fileInput.files[0];
+      if (!file) return alert("Please select a file");
+      showLoading(true);
+      const { error } = await supabase.storage.from('files').upload(file.name, file, { upsert: true });
+      showLoading(false);
+      if (error) alert(error.message);
+      else {
+        alert("File uploaded!");
+        loadFiles();
+      }
+    });
+
+    async function loadFiles() {
+      const { data, error } = await supabase.storage.from('files').list('', { limit: 100 });
+      fileList.innerHTML = "";
+      if (error) return console.error(error);
+      data.forEach(async (file) => {
+        const { data: urlData } = supabase.storage.from('files').getPublicUrl(file.name);
+        const div = document.createElement('div');
+        div.classList.add('file-item');
+        div.innerHTML = `
+          <a href="${urlData.publicUrl}" target="_blank">${file.name}</a>
+          <button onclick="deleteFile('${file.name}')">Delete</button>
+        `;
+        fileList.appendChild(div);
+      });
+    }
+
+    async function deleteFile(fileName) {
+      const { error } = await supabase.storage.from('files').remove([fileName]);
+      if (error) alert(error.message);
+      else loadFiles();
+    }
+
+    changeAvatarBtn.addEventListener('click', () => avatarInput.click());
+
+    avatarInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      showLoading(true);
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData.user.id;
+      const filePath = `${userId}.jpg`;
+      await supabase.storage.from('avatars').upload(filePath, file, { upsert: true });
+      loadAvatar(userId);
+      showLoading(false);
+    });
+
+    async function loadAvatar(userId) {
+      const { data } = supabase.storage.from('avatars').getPublicUrl(`${userId}.jpg`);
+      avatarImg.src = data.publicUrl || "https://via.placeholder.com/50";
+    }
+
+    checkSession();
+  </script>
 </body>
 </html>
