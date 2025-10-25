@@ -2,137 +2,45 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SkillsVirtual Dashboard</title>
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <style>
-    body {
-      font-family: "Poppins", sans-serif;
-      background: #f7f9fb;
-      color: #333;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 420px;
-      margin: 100px auto;
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-      text-align: center;
-    }
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-      font-size: 16px;
-    }
-    button {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-    .dashboard {
-      display: none;
-    }
-    .file-list {
-      text-align: left;
-      margin-top: 15px;
-      font-size: 14px;
-    }
-    a {
-      color: #007bff;
-      text-decoration: none;
-    }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkillsVirtual - Login</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body>
-  <div class="container" id="auth-section">
-    <h2>Welcome to SkillsVirtual</h2>
-    <input type="email" id="email" placeholder="Email" />
-    <input type="password" id="password" placeholder="Password" />
-    <button id="signup">Sign Up</button>
-    <button id="login">Login</button>
+<body class="bg-gray-100 flex justify-center items-center h-screen">
+  <div class="bg-white shadow-2xl rounded-2xl p-8 w-full max-w-md text-center">
+    <h1 class="text-3xl font-bold mb-6 text-gray-800">Welcome to SkillsVirtual</h1>
+    <input type="email" id="email" placeholder="Email" class="border border-gray-300 p-2 w-full mb-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    <input type="password" id="password" placeholder="Password" class="border border-gray-300 p-2 w-full mb-4 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" />
+    <button id="loginBtn" class="bg-blue-600 text-white w-full py-2 rounded-md hover:bg-blue-700">Login</button>
+    <p class="mt-4 text-gray-600">Don't have an account? <a href="#" id="signupBtn" class="text-blue-500 font-semibold">Sign Up</a></p>
   </div>
 
-  <div class="container dashboard" id="dashboard">
-    <h2>Dashboard</h2>
-    <p id="user-email"></p>
-    <input type="file" id="fileInput" />
-    <button id="uploadBtn">Upload File</button>
-    <div class="file-list" id="fileList"></div>
-    <button id="logout">Logout</button>
-  </div>
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    const SUPABASE_URL = 'https://xrytaxiasdbpqhrawwep.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyeXRheGlhc2RicHFocmF3d2VwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMTUzNTUsImV4cCI6MjA3Njg5MTM1NX0.A0c_p6SgdWauAA-wv5kvFnAZ1F7bz7wLAKRiz4772m0';
+    const SUPABASE_URL = "https://xrytaxiasdbpqhrawwep.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyeXRheGlhc2RicHFocmF3d2VwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMTUzNTUsImV4cCI6MjA3Njg5MTM1NX0.A0c_p6SgdWauAA-wv5kvFnAZ1F7bz7wLAKRiz4772m0";
+
     const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    const authSection = document.getElementById('auth-section');
-    const dashboard = document.getElementById('dashboard');
-    const emailInput = document.getElementById('email');
-    const passwordInput = document.getElementById('password');
-    const userEmail = document.getElementById('user-email');
-    const fileInput = document.getElementById('fileInput');
-    const fileList = document.getElementById('fileList');
-
-    document.getElementById('signup').addEventListener('click', async () => {
-      const { data, error } = await supabase.auth.signUp({
-        email: emailInput.value,
-        password: passwordInput.value
-      });
-      alert(error ? error.message : "Signup successful! Please check your email to verify.");
-    });
-
-    document.getElementById('login').addEventListener('click', async () => {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: emailInput.value,
-        password: passwordInput.value
-      });
-      if (error) return alert(error.message);
-      showDashboard();
-    });
-
-    document.getElementById('logout').addEventListener('click', async () => {
-      await supabase.auth.signOut();
-      dashboard.style.display = 'none';
-      authSection.style.display = 'block';
-    });
-
-    document.getElementById('uploadBtn').addEventListener('click', async () => {
-      const file = fileInput.files[0];
-      if (!file) return alert('Please select a file');
-      const { data, error } = await supabase.storage.from('files').upload(`${Date.now()}_${file.name}`, file);
-      if (error) return alert(error.message);
-      alert("File uploaded successfully!");
-      loadFiles();
-    });
-
-    async function loadFiles() {
-      const { data, error } = await supabase.storage.from('files').list('');
-      if (error) return;
-      fileList.innerHTML = data.map(f => `<a href="${SUPABASE_URL}/storage/v1/object/public/files/${f.name}" target="_blank">${f.name}</a><br>`).join('');
-    }
-
-    async function showDashboard() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        authSection.style.display = 'none';
-        dashboard.style.display = 'block';
-        userEmail.textContent = `Logged in as: ${user.email}`;
-        loadFiles();
+    document.getElementById('loginBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        alert("❌ " + error.message);
+      } else {
+        localStorage.setItem('sb_user', JSON.stringify(data));
+        window.location.href = "dashboard.html";
       }
-    }
+    });
 
-    showDashboard();
+    document.getElementById('signupBtn').addEventListener('click', async () => {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const { error } = await supabase.auth.signUp({ email, password });
+      if (error) alert("❌ " + error.message);
+      else alert("✅ Signup successful! Please check your email for verification.");
+    });
   </script>
 </body>
 </html>
