@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SkillsVirtual Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <div class="flex justify-between items-center bg-blue-600 text-white p-4">
+    <h1 class="text-xl font-semibold">SkillsVirtual Dashboard</h1>
+    <button id="logoutBtn" class="bg-red-500 px-4 py-1 rounded hover:bg-red-600">Logout</button>
+  </div>
+
+  <div class="max-w-2xl mx-auto mt-10 bg-white p-6 rounded-lg shadow-md">
+    <h2 class="text-lg font-semibold mb-4">Upload Your File</h2>
+    <input type="file" id="fileInput" class="mb-4" />
+    <button id="uploadBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Upload</button>
+    <p id="uploadStatus" class="mt-3 text-sm text-gray-600"></p>
+
+    <h2 class="text-lg font-semibold mt-8 mb-2">Uploaded Files</h2>
+    <ul id="fileList" class="list-disc pl-5 text-gray-700"></ul>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = "https://xrytaxiasdbpqhrawwep.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhyeXRheGlhc2RicHFocmF3d2VwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEzMTUzNTUsImV4cCI6MjA3Njg5MTM1NX0.A0c_p6SgdWauAA-wv5kvFnAZ1F7bz7wLAKRiz4772m0";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    document.getElementById('logoutBtn').addEventListener('click', async () => {
+      await supabase.auth.signOut();
+      localStorage.removeItem('sb_user');
+      window.location.href = "index.html";
+    });
+
+    document.getElementById('uploadBtn').addEventListener('click', async () => {
+      const fileInput = document.getElementById('fileInput');
+      const uploadStatus = document.getElementById('uploadStatus');
+      const file = fileInput.files[0];
+      if (!file) return alert("Please choose a file.");
+
+      uploadStatus.textContent = "Uploading...";
+      const { data, error } = await supabase.storage.from("uploads").upload(`public/${file.name}`, file, { upsert: true });
+
+      if (error) uploadStatus.textContent = "❌ Upload failed: " + error.message;
+      else {
+        uploadStatus.textContent = "✅ Uploaded successfully!";
+        loadFiles();
+      }
+    });
+
+    async function loadFiles() {
+      const fileList = document.getElementById('fileList');
+      const { data, error } = await supabase.storage.from("uploads").list("public");
+      fileList.innerHTML = "";
+      if (error) return;
+      data.forEach(file => {
+        const li = document.createElement('li');
+        li.textContent = file.name;
+        fileList.appendChild(li);
+      });
+    }
+
+    loadFiles();
+  </script>
+</body>
+</html>
